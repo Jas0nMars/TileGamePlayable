@@ -20,6 +20,7 @@ export class MainAction extends SceneBase {
 
     cash_amount:number = 0;
     cash_display:number = 0;
+    pending_popup:boolean = false;
 
     start() {
         this.init_bg_sound();
@@ -52,6 +53,11 @@ export class MainAction extends SceneBase {
         }else if( this.cash_display != this.cash_amount ){
             this.cash_display = this.cash_amount;
             this.update_cash_label();
+        }
+        // 滚动完毕后弹出弹窗
+        if( this.pending_popup && this.cash_display == this.cash_amount ){
+            this.pending_popup = false;
+            this.show_trial_popup();
         }
     }
 
@@ -116,11 +122,13 @@ export class MainAction extends SceneBase {
     }
 
     /**
-     * 下一关（试玩广告模式下弹出完成弹窗）
+     * 下一关（试玩广告模式下等待滚动完成后弹出完成弹窗）
      */
     next_game(){
-        // 试玩广告模式下，第一关通过后弹出完成弹窗
-        // 直接查找弹窗节点并激活，不依赖弹窗自身生命周期
+        this.pending_popup = true;
+    }
+
+    show_trial_popup(){
         let popup = this.node.getChildByName("trial_complete_popup");
         if( popup ){
             popup.active = true;
