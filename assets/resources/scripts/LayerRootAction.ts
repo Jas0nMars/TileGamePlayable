@@ -150,7 +150,7 @@ export class LayerRootAction extends Component {
         let slot_pos = this.layer_3_action.get_slot_position(clone_block);
         let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(slot_pos);
 
-        tween(clone_block.node).to(0.15,{ position:local_pos }).call(()=>{
+        tween(clone_block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
             this.layer_3_action.add(clone_block);
             let is_del = this.layer_3_action.del_sane_block();
             if( is_del ){
@@ -174,7 +174,7 @@ export class LayerRootAction extends Component {
         let slot_pos = this.layer_3_action.get_slot_position(block);
         let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(slot_pos);
 
-        tween(block.node).to(0.15,{ position:local_pos }).call(()=>{
+        tween(block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
             this.layer_3_action.add(block);
             
             let is_del = this.layer_3_action.del_sane_block();
