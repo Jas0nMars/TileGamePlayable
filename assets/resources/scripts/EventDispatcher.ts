@@ -18,6 +18,7 @@ export class EventDispatcher {
 
     public static REPLAY_GAME = "replay_game"
     public static REFRESH_BUTTONS = "refresh_buttons"
+    public static TRIAL_COMPLETE = "trial_complete"
     
     
     static get_target():EventTarget{

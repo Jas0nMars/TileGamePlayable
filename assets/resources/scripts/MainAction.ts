@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, director, Node, Sprite, tween, Vec3 } from 'cc';
+import { _decorator, Button, Component, Node, Sprite } from 'cc';
 import { SceneBase } from './SceneBase';
 import { GameState } from './GameState';
 import { EditAction } from './EditAction';
@@ -30,7 +30,8 @@ export class MainAction extends SceneBase {
         if( GameState.game_model==0 ){
             this.eidt_root.active = false;
             GameState.cur_lvl = 1;
-            this.start_game()
+            // 试玩广告：直接进入游戏，跳过首页
+            this.start_game_direct()
 
             EventDispatcher.get_target().on(EventDispatcher.REPLAY_GAME,this.replay_game,this)
             EventDispatcher.get_target().on(EventDispatcher.REFRESH_BUTTONS,this.refresh_buttons,this)
@@ -46,81 +47,35 @@ export class MainAction extends SceneBase {
         
     }
 
-    click_back(){
-        this.stop_bg_sound();
-        
-        director.loadScene("home")
-    }
-
     replay_game(){
         GameState.cur_lvl = 1;
-        this.start_game()
+        this.start_game_direct()
     }
 
-    private sheeps_tween(callback:Function){
-        this.sheeps_node.active = true;
-        this.sheeps_node.setPosition(350,0)
-        this.sheeps_node.setScale(2,2);
-
-        tween(this.sheeps_node)
-        .to(0.8,{ position:new Vec3(-350,0) })
-        .call(()=>{
-            callback()
-        })
-        .to(0.6,{ position:new Vec3(-1000,0) })
-        .call(()=>{
-            this.sheeps_node.active = false;
-        })
-        .start()
-    }
-
-    start_game(){
-        this.sheeps_tween(()=>{
-            GameState.reset_ad_times();
-            this.refresh_buttons();
-    
-            let layer_root = this.node.getChildByName("layer_root").getComponent(LayerRootAction)
-            layer_root.start_game()
-        })
-    }
-    
     /**
-     * 下一关
+     * 试玩广告：直接进入游戏（无羊驼动画）
+     */
+    start_game_direct(){
+        GameState.reset_ad_times();
+        let layer_root = this.node.getChildByName("layer_root").getComponent(LayerRootAction)
+        layer_root.start_game()
+    }
+
+    /**
+     * 下一关（试玩广告模式下弹出完成弹窗）
      */
     next_game(){
-        // 当前关卡 +1
-        GameState.cur_lvl+=1;
-        if( GameState.cur_lvl>GameState.get_max_lvl() ){
-            GameState.cur_lvl = 1;
+        // 试玩广告模式下，第一关通过后弹出完成弹窗
+        // 直接查找弹窗节点并激活，不依赖弹窗自身生命周期
+        let popup = this.node.getChildByName("trial_complete_popup");
+        if( popup ){
+            popup.active = true;
+            console.log("[TrialComplete] 弹窗已显示");
+        }else{
+            console.warn("[TrialComplete] 未找到 trial_complete_popup 节点");
         }
-        // 开始游戏
-        this.start_game()
     }
 
-    /**
-     * 刷新按钮样式 模式样式或是灰度渲染
-     */
-    refresh_buttons(){
-        // 判断道具次数
-        if( GameState.ad_redo_times<=0 ){
-            // 如果道具次数<=0 进行灰度渲染 按钮为灰色
-            this.btn_redo.getComponent(Sprite).grayscale = true;
-        }else{
-            // 正常的渲染
-            this.btn_redo.getComponent(Sprite).grayscale = false;
-        }
-        if( GameState.ad_remove_times<=0 ){
-            this.btn_remove.getComponent(Sprite).grayscale = true;
-        }else{
-            this.btn_remove.getComponent(Sprite).grayscale = false;
-        }
-
-        if( GameState.ad_random_times<=0 ){
-            this.btn_random.getComponent(Sprite).grayscale = true;
-        }else{
-            this.btn_random.getComponent(Sprite).grayscale = false;
-        }
-    }
 }
 
 
