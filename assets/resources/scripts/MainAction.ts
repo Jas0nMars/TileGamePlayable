@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, Node, Sprite } from 'cc';
+import { _decorator, Button, Component, instantiate, Label, Node, Prefab, Sprite, tween, UITransform, Vec3 } from 'cc';
 import { SceneBase } from './SceneBase';
 import { GameState } from './GameState';
 import { EditAction } from './EditAction';
@@ -12,17 +12,14 @@ export class MainAction extends SceneBase {
     @property({ type:Node })
     eidt_root:Node = null;
 
-    @property({ type:Button })
-    btn_redo:Button = null;
-
-    @property({ type:Button })
-    btn_remove:Button = null;
-
-    @property({ type:Button })
-    btn_random:Button = null;
-
     @property({ type:Node })
-    sheeps_node:Node = null;
+    lb_cash_num:Node = null;
+
+    @property({ type:Prefab })
+    cash_fly:Prefab = null;
+
+    cash_amount:number = 0;
+    cash_display:number = 0;
 
     start() {
         this.init_bg_sound();
@@ -34,9 +31,13 @@ export class MainAction extends SceneBase {
             this.start_game_direct()
 
             EventDispatcher.get_target().on(EventDispatcher.REPLAY_GAME,this.replay_game,this)
-            EventDispatcher.get_target().on(EventDispatcher.REFRESH_BUTTONS,this.refresh_buttons,this)
+            EventDispatcher.get_target().on(EventDispatcher.CASH_ELIMINATED,this.on_cash_eliminated,this)
+
+            // 初始化现金显示
+            this.cash_amount = 0;
+            this.cash_display = 0;
+            this.update_cash_label();
         }else{
-            this.sheeps_node.active = false;
             this.eidt_root.active = true;
             this.eidt_root.getChildByName("edit").getComponent(EditAction).start_grid()
         }
@@ -44,7 +45,60 @@ export class MainAction extends SceneBase {
     }
 
     update(deltaTime: number) {
-        
+        // 现金滚动动画
+        if( Math.abs(this.cash_display - this.cash_amount) > 0.5 ){
+            this.cash_display += (this.cash_amount - this.cash_display) * 5 * deltaTime;
+            this.update_cash_label();
+        }else if( this.cash_display != this.cash_amount ){
+            this.cash_display = this.cash_amount;
+            this.update_cash_label();
+        }
+    }
+
+    update_cash_label(){
+        if( !this.lb_cash_num ) return;
+        let label = this.lb_cash_num.getComponent(Label);
+        if( label ){
+            label.string = "rp" + this.format_cash(Math.floor(this.cash_display));
+        }
+    }
+
+    format_cash(num:number):string{
+        let str = num.toString();
+        let result = '';
+        let count = 0;
+        for( let i = str.length - 1; i >= 0; i-- ){
+            if( count > 0 && count % 3 == 0 ){
+                result = ',' + result;
+            }
+            result = str[i] + result;
+            count++;
+        }
+        return result;
+    }
+
+    on_cash_eliminated(positions:Vec3[]){
+        if( !this.lb_cash_num || !this.cash_fly ) return;
+
+        let ui_transform = this.node.getComponent(UITransform);
+        let target_local = ui_transform.convertToNodeSpaceAR(this.lb_cash_num.getWorldPosition());
+
+        for( let pos of positions ){
+            let fly = instantiate(this.cash_fly);
+            fly.setParent(this.node);
+            let start_local = ui_transform.convertToNodeSpaceAR(pos);
+            fly.setPosition(start_local);
+
+            tween(fly)
+                .to(0.5, { position: target_local, scale: new Vec3(0.3,0.3,1) })
+                .call(()=>{
+                    fly.removeFromParent();
+                    // 飞到终点后才增加金额，开始数字滚动
+                    let add = Math.floor(Math.random() * 20001) + 30000;
+                    this.cash_amount += add;
+                })
+                .start();
+        }
     }
 
     replay_game(){

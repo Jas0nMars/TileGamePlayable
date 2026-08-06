@@ -152,9 +152,10 @@ export class LayerRootAction extends Component {
 
         tween(clone_block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
             this.layer_3_action.add(clone_block);
-            let is_del = this.layer_3_action.del_sane_block();
-            if( is_del ){
+            let [removed, positions] = this.layer_3_action.del_sane_block();
+            if( removed.length>0 ){
                 this.play_sound(1)
+                EventDispatcher.get_target().emit(EventDispatcher.CASH_ELIMINATED, positions);
                 if( 
                     this.layer_1_action.get_block_size()==0&&
                     this.layer_2_action.get_block_size()==0&&
@@ -177,9 +178,10 @@ export class LayerRootAction extends Component {
         tween(block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
             this.layer_3_action.add(block);
             
-            let is_del = this.layer_3_action.del_sane_block();
-            if( is_del ){
+            let [removed, positions] = this.layer_3_action.del_sane_block();
+            if( removed.length>0 ){
                 this.play_sound(1)
+                EventDispatcher.get_target().emit(EventDispatcher.CASH_ELIMINATED, positions);
                 if( 
                     this.layer_1_action.get_block_size()==0&&
                     this.layer_2_action.get_block_size()==0&&

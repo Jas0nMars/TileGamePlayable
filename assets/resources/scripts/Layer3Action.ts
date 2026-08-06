@@ -70,7 +70,7 @@ export class Layer3Action extends Component {
     }
 
     // 删除
-    del_sane_block():boolean{
+    del_sane_block():[PreBlockAction[], Vec3[]]{
         let temp:PreBlockAction[] = [];
         for( let ele of this.order_list){
             if( temp.length==0 ){
@@ -88,6 +88,8 @@ export class Layer3Action extends Component {
             }
         }
         if( temp.length>=3 ){
+            // 在移除前捕获世界坐标
+            let positions:Vec3[] = temp.map(ele => ele.node.getWorldPosition().clone());
             for( let ele of temp ){
                 // 创建预加载资源
                 let del_ani = instantiate(this.per_del);
@@ -104,9 +106,9 @@ export class Layer3Action extends Component {
             this.scheduleOnce(()=>{
                 this.reset_order()
             },0.3)
-            return true
+            return [temp, positions]
         }
-        return false;
+        return [[], []];
     }
 
     get_block_size():number{
