@@ -96,14 +96,6 @@ export class MainAction extends SceneBase {
                 guide.on_orientation_change();
             }
         }
-        // 通知弹窗内的 TrialCompleteAction
-        let popup = this.node.getChildByName("trial_complete_popup");
-        if( popup ){
-            let trial_action = popup.getComponent("TrialCompleteAction") as any;
-            if( trial_action ){
-                trial_action.set_orientation(is_landscape);
-            }
-        }
     }
 
     update_cash_label(){

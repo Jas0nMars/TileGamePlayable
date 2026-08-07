@@ -11,10 +11,7 @@ const { ccclass, property } = _decorator;
 export class TrialCompleteAction extends Component {
 
     @property({ type:Node })
-    lb_cash_num_portrait:Node = null;
-
-    @property({ type:Node })
-    lb_cash_num_landscape:Node = null;
+    lb_cash_num:Node = null;
 
     @property({ type:Node })
     img_glow:Node = null;
@@ -25,22 +22,9 @@ export class TrialCompleteAction extends Component {
     @property({ type:Node })
     spray_origin:Node = null; // 喷射起点节点（编辑器拖放控制位置和层级）
 
-    @property({ type:Node })
-    cash_info_portrait:Node = null;
-
-    @property({ type:Node })
-    cash_info_landscape:Node = null;
-
-    is_landscape:boolean = false;
-
     onEnable() {
-        // 同步 MainAction 中的现金数值和横竖屏状态
-        let main = this.node.parent.getComponent(MainAction);
-        if( main ){
-            this.is_landscape = main.is_landscape;
-        }
+        // 同步 MainAction 中的现金数值
         this.sync_cash();
-        this.update_cash_info_visibility();
         // 启动光晕旋转动画
         this.start_glow_rotate();
         // 持续喷射现金（类似粒子效果）
@@ -52,45 +36,14 @@ export class TrialCompleteAction extends Component {
         this.unschedule(this.play_cash_spray);
     }
 
-    /** 横竖屏切换时由 MainAction 调用 */
-    set_orientation(is_landscape:boolean) {
-        this.is_landscape = is_landscape;
-        this.update_cash_info_visibility();
-        // 重新同步现金数值
-        this.sync_cash();
-    }
-
-    /** 切换 cash_info 和 lb_cash_num 的横竖屏子节点 */
-    update_cash_info_visibility() {
-        if( this.cash_info_portrait ) this.cash_info_portrait.active = !this.is_landscape;
-        if( this.cash_info_landscape ) this.cash_info_landscape.active = this.is_landscape;
-        if( this.lb_cash_num_portrait ) this.lb_cash_num_portrait.active = !this.is_landscape;
-        if( this.lb_cash_num_landscape ) this.lb_cash_num_landscape.active = this.is_landscape;
-    }
-
-    /** 获取当前方向下活跃的现金标签 */
-    get_active_cash_label():Node {
-        let main = this.node.parent.getComponent(MainAction);
-        if( main ){
-            return main.get_active_cash_label();
-        }
-        return null;
-    }
-
     sync_cash() {
-        let active_label = this.get_active_cash_label();
-        if( !active_label ) return;
-        let src_label = active_label.getComponent(Label);
+        if( !this.lb_cash_num ) return;
+        let main = this.node.parent.getComponent(MainAction);
+        if( !main ) return;
+        let src_label = main.get_active_cash_label()?.getComponent(Label);
         if( !src_label ) return;
-        // 同时更新弹窗内的横竖屏标签
-        if( this.lb_cash_num_portrait ){
-            let label = this.lb_cash_num_portrait.getComponent(Label);
-            if( label ) label.string = src_label.string;
-        }
-        if( this.lb_cash_num_landscape ){
-            let label = this.lb_cash_num_landscape.getComponent(Label);
-            if( label ) label.string = src_label.string;
-        }
+        let label = this.lb_cash_num.getComponent(Label);
+        if( label ) label.string = src_label.string;
     }
 
     start_glow_rotate() {
