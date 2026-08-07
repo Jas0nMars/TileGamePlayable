@@ -4,6 +4,7 @@ import { GameState } from './GameState';
 import { EditAction } from './EditAction';
 import { LayerRootAction } from './LayerRootAction';
 import { EventDispatcher } from './EventDispatcher';
+import { GuideAction } from './GuideAction';
 const { ccclass, property } = _decorator;
 
 @ccclass('MainAction')
@@ -17,6 +18,9 @@ export class MainAction extends SceneBase {
 
     @property({ type:Prefab })
     cash_fly:Prefab = null;
+
+    @property({ type:Node })
+    guide_tips:Node = null;
 
     cash_amount:number = 0;
     cash_display:number = 0;
@@ -119,6 +123,34 @@ export class MainAction extends SceneBase {
         GameState.reset_ad_times();
         let layer_root = this.node.getChildByName("layer_root").getComponent(LayerRootAction)
         layer_root.start_game()
+
+        // 第一关显示新手引导，延迟等待方块入场动画完成
+        if( GameState.cur_lvl == 1 && this.guide_tips ){
+            this.scheduleOnce(()=>{
+                this.show_guide();
+            }, 0.5);
+        }
+    }
+
+    show_guide(){
+        let layer_root = this.node.getChildByName("layer_root").getComponent(LayerRootAction);
+        let layer1 = layer_root.layer_1_action;
+        if( !layer1 ) return;
+        let children = layer1.get_children();
+        if( children.length == 0 ) return;
+        // 第一个子节点即左上角的 block
+        let first_block = children[0];
+        let guide = this.guide_tips.getComponent(GuideAction);
+        if( guide ){
+            guide.show_guide(first_block, layer_root);
+        }
+    }
+
+    hide_guide(){
+        if( this.guide_tips ){
+            let guide = this.guide_tips.getComponent(GuideAction);
+            if( guide ) guide.hide_guide();
+        }
     }
 
     /**

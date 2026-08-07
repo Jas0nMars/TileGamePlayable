@@ -14,6 +14,7 @@ export class Layer1Action extends Component {
     types_array:SpriteFrame[] = []
 
     cur_block_action:PreBlockAction = null;
+    is_guide_mode:boolean = false; // 引导模式标记
 
     start() {
         if( GameState.game_model==1 ){
@@ -139,6 +140,29 @@ export class Layer1Action extends Component {
     get_touch_block(pos_world:Vec2):PreBlockAction{
         // 将世界坐标点 转为 局部坐标点
         let local = this.node.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(pos_world.x,pos_world.y))
+        
+        // 引导期间，只允许点击高亮 block（在 guide_tips 下）
+        if( this.is_guide_mode ){
+            let canvas = this.node.getParent()?.getParent();
+            if( canvas ){
+                let guide_tips = canvas.getChildByName("guide_tips");
+                if( guide_tips && guide_tips.active ){
+                    for( let child of guide_tips.children ){
+                        let block_action = child.getComponent(PreBlockAction);
+                        if( !block_action ) continue;
+                        if( !block_action.can_touch() ) continue;
+                        let guide_ui = guide_tips.getComponent(UITransform);
+                        let guide_local = guide_ui.convertToNodeSpaceAR(new Vec3(pos_world.x, pos_world.y, 0));
+                        if( block_action.get_bounding_box().contains(new Vec2(guide_local.x, guide_local.y)) ){
+                            return block_action;
+                        }
+                    }
+                }
+            }
+            return null; // 引导期间只允许点击高亮 block
+        }
+        
+        // 正常遍历 layer1 的子节点
         for( let  i = this.node.children.length-1;i>=0;i-- ){
             let ele  = this.node.children[i];
             if( !ele.active ){
@@ -194,10 +218,18 @@ export class Layer1Action extends Component {
         if( this.cur_block_action!=block_action ){
             return
         }
-        // 播放click音效
+        // 播放 click 音效
         this.node.parent.getComponent(LayerRootAction).play_sound(0)
-        // 把block放入的熬 layer root中
+        // 把 block 放入 layer root 中
         this.node.parent.getComponent(LayerRootAction).to_3_from_1(this.cur_block_action,this.per_block)
+                
+        // 引导期间，点击第一个 block 后隐藏引导
+        if( this.is_guide_mode ){
+            let main = this.node.getParent()?.getParent()?.getComponent("MainAction") as any;
+            if( main && main.hide_guide ){
+                main.hide_guide();
+            }
+        }
     }
 
     /**
