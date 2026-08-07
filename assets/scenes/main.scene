@@ -9761,6 +9761,10 @@
     "spray_origin": {
       "__id__": 243
     },
+    "reward_clip": {
+      "__uuid__": "27509aa5-085a-4e8f-a294-3ec0b0396036",
+      "__expectedType__": "cc.AudioClip"
+    },
     "_id": "62MLuItd9O1ZcC/xXSgKOi"
   },
   {

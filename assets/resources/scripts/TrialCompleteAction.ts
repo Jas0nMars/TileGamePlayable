@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Sprite, SpriteFrame, tween, UIOpacity, UITransform, Vec3 } from 'cc';
+import { _decorator, AudioClip, AudioSource, Component, Label, Node, Sprite, SpriteFrame, tween, UIOpacity, UITransform, Vec3 } from 'cc';
 import { MainAction } from './MainAction';
 const { ccclass, property } = _decorator;
 
@@ -40,12 +40,18 @@ export class TrialCompleteAction extends Component {
     @property({ type:Node })
     spray_origin:Node = null;   // 喷射起点节点
 
+    @property({ type:AudioClip })
+    reward_clip:AudioClip = null; // reward 音效
+
     private _breathing_tween_1: any = null;
     private _breathing_tween_2: any = null;
+    private _audio_source: AudioSource = null;
 
     onEnable() {
         // 同步 MainAction 中的现金数值
         this.sync_cash();
+        // 播放 reward 音效
+        this.play_reward_sound();
         // 播放入场动画序列
         this.play_entrance_animation();
     }
@@ -53,6 +59,18 @@ export class TrialCompleteAction extends Component {
     onDisable() {
         this.unschedule(this.play_cash_spray);
         this.stop_breathing();
+    }
+
+    /** 播放 reward 音效 */
+    play_reward_sound() {
+        if( !this.reward_clip ) return;
+        if( !this._audio_source ) {
+            this._audio_source = this.node.getComponent(AudioSource);
+            if( !this._audio_source ) {
+                this._audio_source = this.node.addComponent(AudioSource);
+            }
+        }
+        this._audio_source.playOneShot(this.reward_clip);
     }
 
     /** 同步现金数值 */
