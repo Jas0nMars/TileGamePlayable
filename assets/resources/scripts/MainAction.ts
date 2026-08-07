@@ -89,6 +89,13 @@ export class MainAction extends SceneBase {
         // 切换 lb_cash_num 横竖屏节点
         if( this.lb_cash_num_portrait ) this.lb_cash_num_portrait.active = !is_landscape;
         if( this.lb_cash_num_landscape ) this.lb_cash_num_landscape.active = is_landscape;
+        // 通知引导组件重新定位高亮 block
+        if( this.guide_tips ){
+            let guide = this.guide_tips.getComponent(GuideAction);
+            if( guide ){
+                guide.on_orientation_change();
+            }
+        }
         // 通知弹窗内的 TrialCompleteAction
         let popup = this.node.getChildByName("trial_complete_popup");
         if( popup ){

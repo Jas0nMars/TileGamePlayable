@@ -1,4 +1,4 @@
-import { _decorator, Component, Input, Node, UITransform, Vec3, tween } from 'cc';
+import { _decorator, Component, Input, Node, UITransform, Vec3, tween, view } from 'cc';
 import { LayerRootAction } from './LayerRootAction';
 const { ccclass, property } = _decorator;
 
@@ -21,6 +21,7 @@ export class GuideAction extends Component {
 
     private _highlighted_block: Node = null;
     private _layer_root: LayerRootAction = null;
+    private _block_local_pos: Vec3 = null; // block 在 layer1 局部空间的原始坐标
 
     @property({ type:Node })
     guide_hand:Node = null;
@@ -30,6 +31,15 @@ export class GuideAction extends Component {
         if (!target_block) return;
         this._highlighted_block = target_block;
         this._layer_root = layer_root;
+
+        // 保存 block 在 layer1 局部空间的原始坐标（用于横竖屏切换时还原）
+        let layer1 = (this._layer_root as any).layer_1_action;
+        if (layer1) {
+            let layer1_ui = layer1.node.getComponent(UITransform);
+            if (layer1_ui) {
+                this._block_local_pos = layer1_ui.convertToNodeSpaceAR(target_block.getWorldPosition());
+            }
+        }
 
         // 保存世界位置
         let world_pos = target_block.getWorldPosition();
@@ -50,7 +60,6 @@ export class GuideAction extends Component {
         this.node.active = true;
 
         // 设置引导模式标记
-        let layer1 = (this._layer_root as any).layer_1_action;
         if (layer1) {
             layer1.is_guide_mode = true;
         }
@@ -93,6 +102,47 @@ export class GuideAction extends Component {
             let layer1 = (this._layer_root as any).layer_1_action;
             if (layer1) {
                 layer1.is_guide_mode = false;
+            }
+        }
+    }
+
+    /**
+     * 横竖屏切换时重新定位高亮 block
+     * 原理：利用保存的 layer1 局部坐标，通过 layer1 当前的世界变换算出新的世界位置，再转为 guide_tips 局部坐标
+     */
+    on_orientation_change() {
+        if (!this._highlighted_block || !this._layer_root || !this._block_local_pos) return;
+
+        let block = this._highlighted_block;
+        let layer1 = (this._layer_root as any).layer_1_action;
+        if (!layer1) return;
+
+        // 用 layer1 当前的世界变换，将保存的局部坐标转为新的世界坐标
+        let layer1_ui = layer1.node.getComponent(UITransform);
+        if (!layer1_ui) return;
+        let new_world_pos = layer1_ui.convertToWorldSpaceAR(new Vec3(this._block_local_pos.x, this._block_local_pos.y, 0));
+
+        // 更新 guide_tips 的 contentSize 以匹配新方向
+        let visible_size = view.getVisibleSize();
+        let w = Math.min(visible_size.width, visible_size.height);
+        let h = Math.max(visible_size.width, visible_size.height);
+        let ui = this.node.getComponent(UITransform);
+        if (ui) {
+            ui.setContentSize(w, h);
+        }
+
+        // 将新的世界坐标转为 guide_tips 局部坐标
+        let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(new_world_pos);
+        block.setPosition(local_pos);
+
+        // 更新 guide_hand 位置
+        if (this.guide_hand) {
+            let block_size = block.getComponent(UITransform)?.contentSize;
+            if (block_size) {
+                let hand_pos = local_pos.clone();
+                hand_pos.x += block_size.width / 2;
+                hand_pos.y -= block_size.height / 2;
+                this.guide_hand.setPosition(hand_pos);
             }
         }
     }
