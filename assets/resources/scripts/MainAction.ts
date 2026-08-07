@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, instantiate, Label, Node, Prefab, Sprite, tween, UITransform, Vec3 } from 'cc';
+import { _decorator, Button, Component, instantiate, Label, Node, Prefab, tween, UITransform, Vec3 } from 'cc';
 import { SceneBase } from './SceneBase';
 import { GameState } from './GameState';
 import { EditAction } from './EditAction';
@@ -94,6 +94,7 @@ export class MainAction extends SceneBase {
         let target_local = ui_transform.convertToNodeSpaceAR(this.lb_cash_num.getWorldPosition());
 
         for( let pos of positions ){
+            // 飞到计数器的现金
             let fly = instantiate(this.cash_fly);
             fly.setParent(this.node);
             let start_local = ui_transform.convertToNodeSpaceAR(pos);
@@ -103,7 +104,6 @@ export class MainAction extends SceneBase {
                 .to(0.5, { position: target_local, scale: new Vec3(0.3,0.3,1) })
                 .call(()=>{
                     fly.removeFromParent();
-                    // 飞到终点后才增加金额，开始数字滚动
                     let add = Math.floor(Math.random() * 20001) + 30000;
                     this.cash_amount += add;
                 })
