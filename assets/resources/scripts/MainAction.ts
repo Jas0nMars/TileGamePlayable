@@ -41,7 +41,7 @@ export class MainAction extends SceneBase {
 
     start() {
         // 最先初始化多语言系统（修改此处切换默认语言）
-        I18nInit.init_and_scan('id', this.node);
+        I18nInit.init_and_scan('pt-BR', this.node);
 
         this.init_bg_sound();
 
@@ -137,7 +137,10 @@ export class MainAction extends SceneBase {
     }
 
     format_cash(num:number):string{
-        let str = num.toString();
+        let str = Math.floor(num).toString();
+        let lang = I18nManager.current_language;
+        // 印尼和巴西省略千位分隔符（避免与小数点混淆），英语用 ,
+        if( lang === 'id' || lang === 'pt-BR' ) return str;
         let result = '';
         let count = 0;
         for( let i = str.length - 1; i >= 0; i-- ){
@@ -157,7 +160,12 @@ export class MainAction extends SceneBase {
         let ui_transform = this.node.getComponent(UITransform);
         let target_local = ui_transform.convertToNodeSpaceAR(active_cash.getWorldPosition());
 
-        for( let pos of positions ){
+        // 每次消除只给一次奖励，平均分给飞行的现金
+        let total_reward = this.get_random_reward();
+        let reward_per_fly = Math.floor(total_reward / positions.length);
+
+        for( let i = 0; i < positions.length; i++ ){
+            let pos = positions[i];
             // 飞到计数器的现金
             let fly = instantiate(this.cash_fly);
             fly.setParent(this.node);
@@ -165,11 +173,14 @@ export class MainAction extends SceneBase {
             fly.setPosition(start_local);
             this.cash_flying_count++;
 
+            // 最后一张钞票补上取整差额
+            let reward = (i == positions.length - 1) ? (total_reward - reward_per_fly * i) : reward_per_fly;
+
             tween(fly)
                 .to(0.5, { position: target_local, scale: new Vec3(0.3,0.3,1) })
                 .call(()=>{
                     fly.removeFromParent();
-                    this.cash_amount += this.get_random_reward();
+                    this.cash_amount += reward;
                     this.cash_flying_count--;
                 })
                 .start();

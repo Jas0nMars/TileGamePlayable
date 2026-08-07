@@ -11,6 +11,24 @@ const { ccclass, property } = _decorator;
 export class TrialCompleteAction extends Component {
 
     @property({ type:Node })
+    mask:Node = null;           // 遮罩背景
+
+    @property({ type:Node })
+    board:Node = null;          // 弹窗底板
+
+    @property({ type:Node })
+    win_1:Node = null;          // 胜利图标1
+
+    @property({ type:Node })
+    win_2:Node = null;          // 胜利图标2
+
+    @property({ type:Node })
+    cash_board:Node = null;     // 现金展示区
+
+    @property({ type:Node })
+    cash_btn:Node = null;       // 现金按钮
+
+    @property({ type:Node })
     lb_cash_num:Node = null;
 
     @property({ type:Node })
@@ -20,22 +38,24 @@ export class TrialCompleteAction extends Component {
     cash_frames:SpriteFrame[] = [];
 
     @property({ type:Node })
-    spray_origin:Node = null; // 喷射起点节点（编辑器拖放控制位置和层级）
+    spray_origin:Node = null;   // 喷射起点节点
+
+    private _breathing_tween_1: any = null;
+    private _breathing_tween_2: any = null;
 
     onEnable() {
         // 同步 MainAction 中的现金数值
         this.sync_cash();
-        // 启动光晕旋转动画
-        this.start_glow_rotate();
-        // 持续喷射现金（类似粒子效果）
-        this.play_cash_spray();
-        this.schedule(this.play_cash_spray, 0.25);
+        // 播放入场动画序列
+        this.play_entrance_animation();
     }
 
     onDisable() {
         this.unschedule(this.play_cash_spray);
+        this.stop_breathing();
     }
 
+    /** 同步现金数值 */
     sync_cash() {
         if( !this.lb_cash_num ) return;
         let main = this.node.parent.getComponent(MainAction);
@@ -46,6 +66,7 @@ export class TrialCompleteAction extends Component {
         if( label ) label.string = src_label.string;
     }
 
+    /** 启动光晕旋转动画 */
     start_glow_rotate() {
         if( !this.img_glow ) return;
         this.img_glow.angle = 0;
@@ -55,6 +76,158 @@ export class TrialCompleteAction extends Component {
             .repeatForever()
             .start();
     }
+
+    // ==================== 入场动画序列 ====================
+
+    /** 播放完整的入场动画序列 */
+    play_entrance_animation() {
+        // 先隐藏所有节点，设置初始状态
+        this._set_node_hidden(this.mask);
+        this._set_node_hidden(this.board);
+        this._set_node_hidden(this.win_1);
+        this._set_node_hidden(this.win_2);
+        this._set_node_hidden(this.cash_board);
+        this._set_node_hidden(this.cash_btn);
+        // img_glow 初始隐藏（保持原缩放，只隐藏透明度）
+        if( this.img_glow ){
+            let opacity = this.img_glow.getComponent(UIOpacity);
+            if( !opacity ) opacity = this.img_glow.addComponent(UIOpacity);
+            opacity.opacity = 0;
+        }
+
+        // 停止之前的呼吸动画
+        this.stop_breathing();
+
+        // 序列：mask → board → win_1 → win_2 → (呼吸) → cash_board → cash_btn → 喷钱
+        let delay = 0;
+
+        // 1. mask 淡入
+        delay += this._fade_in(this.mask, delay, 0.15);
+
+        // 2. board 缩放弹出
+        delay += this._pop_in(this.board, delay, 0.2);
+
+        // 2.5 flow(img_glow) 渐显
+        delay += this._fade_in(this.img_glow, delay, 0.2);
+
+        // 2.6 flow 渐显完成后开始旋转
+        this.scheduleOnce(() => {
+            this.start_glow_rotate();
+        }, delay);
+
+        // 3. win_1 弹出
+        delay += this._pop_in(this.win_1, delay, 0.15);
+
+        // 4. win_2 弹出
+        delay += this._pop_in(this.win_2, delay, 0.15);
+
+        // 5. win_1 和 win_2 开始交叉呼吸缩放
+        this.scheduleOnce(() => {
+            this.start_breathing();
+        }, delay);
+
+        // 6. cash_board 弹出（稍等呼吸动画开始）
+        delay += 0.15;
+        delay += this._pop_in(this.cash_board, delay, 0.15);
+
+        // 7. cash_btn 弹出
+        delay += this._pop_in(this.cash_btn, delay, 0.12);
+
+        // 8. 开始喷钱
+        this.scheduleOnce(() => {
+            this.play_cash_spray();
+            this.schedule(this.play_cash_spray, 0.25);
+        }, delay);
+    }
+
+    /** 设置节点为隐藏状态（scale=0, opacity=0） */
+    _set_node_hidden(node: Node) {
+        if( !node ) return;
+        node.setScale(0, 0, 1);
+        let opacity = node.getComponent(UIOpacity);
+        if( !opacity ) opacity = node.addComponent(UIOpacity);
+        opacity.opacity = 0;
+    }
+
+    /**
+     * 淡入动画
+     * @returns 动画持续时间
+     */
+    _fade_in(node: Node, delay: number, duration: number): number {
+        if( !node ) return duration;
+        let opacity = node.getComponent(UIOpacity);
+        if( !opacity ) opacity = node.addComponent(UIOpacity);
+        opacity.opacity = 0;
+
+        tween(opacity)
+            .delay(delay)
+            .to(duration, { opacity: 255 })
+            .start();
+        // 淡入时保持 scale=1
+        node.setScale(1, 1, 1);
+        return duration;
+    }
+
+    /**
+     * 弹出动画（scale 0→1，带回弹效果）
+     * @returns 动画持续时间
+     */
+    _pop_in(node: Node, delay: number, duration: number): number {
+        if( !node ) return duration;
+        node.setScale(0, 0, 1);
+
+        tween(node)
+            .delay(delay)
+            .to(duration, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+            .start();
+        // 弹出时 opacity 设为 255
+        let opacity = node.getComponent(UIOpacity);
+        if( !opacity ) opacity = node.addComponent(UIOpacity);
+        opacity.opacity = 255;
+
+        return duration;
+    }
+
+    // ==================== 呼吸缩放动画 ====================
+
+    /** 启动 win_1 和 win_2 的交叉呼吸缩放 */
+    start_breathing() {
+        if( !this.win_1 || !this.win_2 ) return;
+
+        // win_1: 1.0 → 1.15 → 1.0（循环）
+        this._breathing_tween_1 = tween(this.win_1)
+            .to(0.6, { scale: new Vec3(1.15, 1.15, 1) }, { easing: 'sineInOut' })
+            .to(0.6, { scale: new Vec3(1.0, 1.0, 1) }, { easing: 'sineInOut' })
+            .union()
+            .repeatForever()
+            .start();
+
+        // win_2: 与 win_1 反相（先缩小再放大）
+        this.win_2.setScale(1.15, 1.15, 1);
+        this._breathing_tween_2 = tween(this.win_2)
+            .to(0.6, { scale: new Vec3(1.0, 1.0, 1) }, { easing: 'sineInOut' })
+            .to(0.6, { scale: new Vec3(1.15, 1.15, 1) }, { easing: 'sineInOut' })
+            .union()
+            .repeatForever()
+            .start();
+    }
+
+    /** 停止呼吸动画 */
+    stop_breathing() {
+        if( this._breathing_tween_1 ) {
+            this._breathing_tween_1.stop();
+            this._breathing_tween_1 = null;
+        }
+        if( this._breathing_tween_2 ) {
+            this._breathing_tween_2.stop();
+            this._breathing_tween_2 = null;
+        }
+        // 恢复默认缩放
+        if( this.win_1 ) this.win_1.setScale(1, 1, 1);
+        if( this.win_2 ) this.win_2.setScale(1, 1, 1);
+    }
+
+    // ==================== 喷现金动画 ====================
 
     /** 喷现金效果：从 spray_origin 位置喷出多张钞票 */
     play_cash_spray() {
@@ -68,9 +241,8 @@ export class TrialCompleteAction extends Component {
         // 喷射起点在父节点局部坐标的原点
         let origin = new Vec3(0, 0, 0);
 
-        // 下落到屏幕底部 + 100像素（设计分辨率 750x1560，底部 y = -780 - 100 = -880）
+        // 下落到屏幕底部 + 100像素
         let screen_bottom_world = new Vec3(0, -880, 0);
-        // 假设父节点的父级有 UITransform（如 Canvas），将屏幕底部转为世界坐标
         let grandparent_ui = parent_node.parent?.getComponent(UITransform);
         if( grandparent_ui ){
             screen_bottom_world = grandparent_ui.convertToWorldSpaceAR(new Vec3(0, -780, 0));
@@ -97,38 +269,32 @@ export class TrialCompleteAction extends Component {
             // 随机旋转
             cash.angle = Math.random() * 360;
 
-            // 随机方向：向上喷射，小角度扇形散开（CC 3.x Y轴向上，90°为正上方）
-            let angle = 90 + (Math.random() - 0.5) * 70; // 55° ~ 125°，更宽的向上锥形
+            // 随机方向：向上喷射，小角度扇形散开
+            let angle = 90 + (Math.random() - 0.5) * 70;
             let speed = 500 + Math.random() * 300;
             let rad = angle * Math.PI / 180;
             let vx = Math.cos(rad) * speed;
-            let vy = Math.sin(rad) * speed; // 正值，向上
+            let vy = Math.sin(rad) * speed;
 
-            // 两阶段动画：先上升减速，再下落加速（模拟真实抛物线）
-            // CC 3.x Y轴向上，重力方向为负，公式：y = vy*t - 0.5*g*t²
+            // 两阶段动画：先上升减速，再下落加速
             let gravity = 1200;
-            let t_up = vy / gravity; // 到达顶点时间
-            let peak_y = origin.y + vy * t_up - 0.5 * gravity * t_up * t_up; // 顶点 y
+            let t_up = vy / gravity;
+            let peak_y = origin.y + vy * t_up - 0.5 * gravity * t_up * t_up;
             let total_duration = 1.2 + Math.random() * 0.6;
-            let t_down = total_duration - t_up; // 下落时间
-            // 下落到屏幕底部 + 100px
+            let t_down = total_duration - t_up;
             let final_x = origin.x + vx * total_duration;
             let rot_delta = (Math.random() - 0.5) * 360;
             let total_rot = cash.angle + rot_delta;
             let up_ratio = t_up / total_duration;
 
-            // 下落 2/3 距离的时间点（quadIn: distance_ratio = time_ratio²）
-            // 2/3 距离对应 time_ratio = sqrt(2/3)
             let sqrt_23 = Math.sqrt(2/3);
-            let t_down_1 = t_down * sqrt_23; // 下落前 2/3 距离
-            let t_down_2 = t_down * (1 - sqrt_23); // 下落后 1/3 距离
-            // 2/3 距离处的中间位置
+            let t_down_1 = t_down * sqrt_23;
+            let t_down_2 = t_down * (1 - sqrt_23);
             let mid_y = peak_y + (final_y - peak_y) * (2/3);
             let mid_x = (origin.x + vx * t_up) + (final_x - (origin.x + vx * t_up)) * (2/3);
             let mid_rot = (cash.angle + total_rot * up_ratio) + (total_rot - (cash.angle + total_rot * up_ratio)) * (2/3);
 
             tween(cash)
-                // 阶段1：上升到顶点
                 .to(t_up, {
                     position: new Vec3(origin.x + vx * t_up, peak_y, 0),
                     angle: cash.angle + total_rot * up_ratio
@@ -138,7 +304,6 @@ export class TrialCompleteAction extends Component {
                         ui_opacity.opacity = 255;
                     }
                 })
-                // 阶段2a：下落前 2/3 距离（quadIn 从静止加速，不渐隐）
                 .to(t_down_1, {
                     position: new Vec3(mid_x, mid_y, 0),
                     angle: mid_rot
@@ -148,7 +313,6 @@ export class TrialCompleteAction extends Component {
                         ui_opacity.opacity = 255;
                     }
                 })
-                // 阶段2b：下落后 1/3（渐隐到 0）
                 .to(t_down_2, {
                     position: new Vec3(final_x, final_y, 0),
                     angle: total_rot
@@ -165,11 +329,8 @@ export class TrialCompleteAction extends Component {
 
     /**
      * 点击"再玩一次"按钮
-     * 预留接口：可对接广告跳转、下载链接等
      */
     click_replay() {
-        // this.node.active = false;
-        // TODO: 对接试玩广告结束后的跳转逻辑
         console.log("[TrialComplete] 点击再玩一次，预留接口调用");
     }
 
@@ -177,8 +338,6 @@ export class TrialCompleteAction extends Component {
      * 点击"关闭"按钮
      */
     click_close() {
-        // this.node.active = false;
-        // TODO: 对接试玩广告关闭逻辑
         console.log("[TrialComplete] 点击关闭，预留接口调用");
     }
 }
