@@ -5,6 +5,8 @@ import { EditAction } from './EditAction';
 import { LayerRootAction } from './LayerRootAction';
 import { EventDispatcher } from './EventDispatcher';
 import { GuideAction } from './GuideAction';
+import { I18nManager } from './I18nManager';
+import { I18nInit } from './I18nInit';
 const { ccclass, property } = _decorator;
 
 @ccclass('MainAction')
@@ -34,9 +36,13 @@ export class MainAction extends SceneBase {
     cash_amount:number = 0;
     cash_display:number = 0;
     pending_popup:boolean = false;
+    cash_flying_count:number = 0; // 正在飞行中的现金数量
     is_landscape:boolean = false;
 
     start() {
+        // 最先初始化多语言系统（修改此处切换默认语言）
+        I18nInit.init_and_scan('id', this.node);
+
         this.init_bg_sound();
 
         if( GameState.game_model==0 ){
@@ -51,6 +57,8 @@ export class MainAction extends SceneBase {
             // 初始化现金显示
             this.cash_amount = 0;
             this.cash_display = 0;
+            this.cash_flying_count = 0;
+            this.pending_popup = false;
             this.update_cash_label();
         }else{
             this.eidt_root.active = true;
@@ -68,8 +76,8 @@ export class MainAction extends SceneBase {
             this.cash_display = this.cash_amount;
             this.update_cash_label();
         }
-        // 滚动完毕后弹出弹窗
-        if( this.pending_popup && this.cash_display == this.cash_amount ){
+        // 等所有现金飞到且滚动完毕后，再弹出弹窗
+        if( this.pending_popup && this.cash_flying_count == 0 && this.cash_display == this.cash_amount ){
             this.pending_popup = false;
             this.show_trial_popup();
         }
@@ -99,7 +107,8 @@ export class MainAction extends SceneBase {
     }
 
     update_cash_label(){
-        let str = "rp" + this.format_cash(Math.floor(this.cash_display));
+        let symbol = this.get_currency_symbol();
+        let str = symbol + this.format_cash(Math.floor(this.cash_display));
         // 同时更新横竖屏两个标签
         if( this.lb_cash_num_portrait ){
             let label = this.lb_cash_num_portrait.getComponent(Label);
@@ -109,6 +118,22 @@ export class MainAction extends SceneBase {
             let label = this.lb_cash_num_landscape.getComponent(Label);
             if( label ) label.string = str;
         }
+    }
+
+    /** 根据当前语言获取货币符号 */
+    get_currency_symbol():string {
+        let lang = I18nManager.current_language;
+        if( lang === 'id' ) return 'Rp';
+        if( lang === 'pt-BR' ) return 'R$';
+        return '$';
+    }
+
+    /** 根据当前语言获取随机奖励金额 */
+    get_random_reward():number {
+        let lang = I18nManager.current_language;
+        if( lang === 'id' ) return Math.floor(Math.random() * 20001) + 30000; // 30000~50000
+        if( lang === 'pt-BR' ) return Math.floor(Math.random() * 301) + 500; // 500~800
+        return Math.floor(Math.random() * 11) + 10; // 10~20
     }
 
     format_cash(num:number):string{
@@ -138,13 +163,14 @@ export class MainAction extends SceneBase {
             fly.setParent(this.node);
             let start_local = ui_transform.convertToNodeSpaceAR(pos);
             fly.setPosition(start_local);
+            this.cash_flying_count++;
 
             tween(fly)
                 .to(0.5, { position: target_local, scale: new Vec3(0.3,0.3,1) })
                 .call(()=>{
                     fly.removeFromParent();
-                    let add = Math.floor(Math.random() * 20001) + 30000;
-                    this.cash_amount += add;
+                    this.cash_amount += this.get_random_reward();
+                    this.cash_flying_count--;
                 })
                 .start();
         }

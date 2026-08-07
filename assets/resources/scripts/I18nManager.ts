@@ -102,9 +102,10 @@ export class I18nManager extends Component {
 
     /** 加载语言数据 */
     private _load_language(lang: LanguageType) {
-        // 如果已加载，直接切换
+        // 立即设置当前语言（不等待异步加载）
+        this._current_language = lang;
+        // 如果已加载，直接通知
         if (this._language_data.has(lang)) {
-            this._current_language = lang;
             this._notify_listeners();
             return;
         }
@@ -120,7 +121,6 @@ export class I18nManager extends Component {
                 map.set(key, data[key]);
             }
             this._language_data.set(lang, map);
-            this._current_language = lang;
             this._notify_listeners();
             console.log(`[I18nManager] 已加载语言: ${lang}`);
         });
