@@ -14,7 +14,16 @@ export class MainAction extends SceneBase {
     eidt_root:Node = null;
 
     @property({ type:Node })
-    lb_cash_num:Node = null;
+    lb_cash_num_portrait:Node = null;
+
+    @property({ type:Node })
+    lb_cash_num_landscape:Node = null;
+
+    @property({ type:Node })
+    cash_info_portrait:Node = null;
+
+    @property({ type:Node })
+    cash_info_landscape:Node = null;
 
     @property({ type:Prefab })
     cash_fly:Prefab = null;
@@ -25,6 +34,7 @@ export class MainAction extends SceneBase {
     cash_amount:number = 0;
     cash_display:number = 0;
     pending_popup:boolean = false;
+    is_landscape:boolean = false;
 
     start() {
         this.init_bg_sound();
@@ -65,11 +75,40 @@ export class MainAction extends SceneBase {
         }
     }
 
+    /** 获取当前方向下活跃的现金标签节点 */
+    get_active_cash_label():Node {
+        return this.is_landscape ? this.lb_cash_num_landscape : this.lb_cash_num_portrait;
+    }
+
+    /** 横竖屏切换时由 ScreenLayoutManager 调用 */
+    set_orientation(is_landscape:boolean) {
+        this.is_landscape = is_landscape;
+        // 切换 cash_info 横竖屏子节点
+        if( this.cash_info_portrait ) this.cash_info_portrait.active = !is_landscape;
+        if( this.cash_info_landscape ) this.cash_info_landscape.active = is_landscape;
+        // 切换 lb_cash_num 横竖屏节点
+        if( this.lb_cash_num_portrait ) this.lb_cash_num_portrait.active = !is_landscape;
+        if( this.lb_cash_num_landscape ) this.lb_cash_num_landscape.active = is_landscape;
+        // 通知弹窗内的 TrialCompleteAction
+        let popup = this.node.getChildByName("trial_complete_popup");
+        if( popup ){
+            let trial_action = popup.getComponent("TrialCompleteAction") as any;
+            if( trial_action ){
+                trial_action.set_orientation(is_landscape);
+            }
+        }
+    }
+
     update_cash_label(){
-        if( !this.lb_cash_num ) return;
-        let label = this.lb_cash_num.getComponent(Label);
-        if( label ){
-            label.string = "rp" + this.format_cash(Math.floor(this.cash_display));
+        let str = "rp" + this.format_cash(Math.floor(this.cash_display));
+        // 同时更新横竖屏两个标签
+        if( this.lb_cash_num_portrait ){
+            let label = this.lb_cash_num_portrait.getComponent(Label);
+            if( label ) label.string = str;
+        }
+        if( this.lb_cash_num_landscape ){
+            let label = this.lb_cash_num_landscape.getComponent(Label);
+            if( label ) label.string = str;
         }
     }
 
@@ -88,10 +127,11 @@ export class MainAction extends SceneBase {
     }
 
     on_cash_eliminated(positions:Vec3[]){
-        if( !this.lb_cash_num || !this.cash_fly ) return;
+        let active_cash = this.get_active_cash_label();
+        if( !active_cash || !this.cash_fly ) return;
 
         let ui_transform = this.node.getComponent(UITransform);
-        let target_local = ui_transform.convertToNodeSpaceAR(this.lb_cash_num.getWorldPosition());
+        let target_local = ui_transform.convertToNodeSpaceAR(active_cash.getWorldPosition());
 
         for( let pos of positions ){
             // 飞到计数器的现金

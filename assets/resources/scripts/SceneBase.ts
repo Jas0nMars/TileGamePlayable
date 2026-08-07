@@ -23,13 +23,13 @@ export class SceneBase extends Component {
     }
 
     private on_off_sound(){
-        if( GameState.sound_state ){
-            this.btn_sound.node.getChildByName("mm_on").active = true;
-            this.btn_sound.node.getChildByName("mm_off").active = false;
-        }else{
-            this.btn_sound.node.getChildByName("mm_on").active = false;
-            this.btn_sound.node.getChildByName("mm_off").active = true;
-        }
+        // if( GameState.sound_state ){
+        //     this.btn_sound.node.getChildByName("mm_on").active = true;
+        //     this.btn_sound.node.getChildByName("mm_off").active = false;
+        // }else{
+        //     this.btn_sound.node.getChildByName("mm_on").active = false;
+        //     this.btn_sound.node.getChildByName("mm_off").active = true;
+        // }
         if( GameState.sound_state ){
             this.audio_source.play()
             this.audio_source.loop = true;
