@@ -1,9 +1,7 @@
 import { _decorator, AudioClip, AudioSource, Component, Label, Node, Sprite, SpriteFrame, tween, UIOpacity, UITransform, Vec3 } from 'cc';
 import { MainAction } from './MainAction';
+import { SDKManager } from './SDKManager';
 const { ccclass, property } = _decorator;
-
-// 声明 MRAID 全局变量（试玩广告平台运行时注入）
-declare const mraid: { open: () => void } | undefined;
 
 /**
  * 试玩广告完成弹窗
@@ -159,6 +157,11 @@ export class TrialCompleteAction extends Component {
             this.play_cash_spray();
             this.schedule(this.play_cash_spray, 0.25);
         }, delay);
+
+        // 9. 所有动画播放完毕后调用 gameEnd
+        this.scheduleOnce(() => {
+            this.gameEnd();
+        }, delay + 2);
     }
 
     /** 设置节点为隐藏状态（scale=0, opacity=0） */
@@ -352,10 +355,8 @@ export class TrialCompleteAction extends Component {
      * 点击"再玩一次"按钮
      */
     click_replay() {
-        console.log("[TrialComplete] 点击再玩一次，预留接口调用");
-         if (typeof mraid !== 'undefined' && mraid.open) {
-            mraid.open();
-        }
+        console.log("[TrialComplete] 点击再玩一次");
+        SDKManager.instance?.triggerDownload();
     }
 
     /**
@@ -363,10 +364,11 @@ export class TrialCompleteAction extends Component {
      * AppLovin 要求使用 mraid.open() 跳转到应用商店
      */
     click_close() {
-        console.log("[TrialComplete] 点击关闭/CTA，调用 mraid.open()");
-        // AppLovin 试玩广告下载跳转
-        if (typeof mraid !== 'undefined' && mraid.open) {
-            mraid.open();
-        }
+        console.log("[TrialComplete] 点击关闭/CTA");
+        SDKManager.instance?.triggerDownload();
+    }
+
+    gameEnd() {
+        SDKManager.instance?.gameEnd();
     }
 }

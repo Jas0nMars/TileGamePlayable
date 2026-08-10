@@ -7,10 +7,8 @@ import { EventDispatcher } from './EventDispatcher';
 import { GuideAction } from './GuideAction';
 import { I18nManager } from './I18nManager';
 import { I18nInit } from './I18nInit';
+import { SDKManager } from './SDKManager';
 const { ccclass, property } = _decorator;
-
-// 声明 MRAID 全局变量（试玩广告平台运行时注入）
-declare const mraid: { open: () => void } | undefined;
 
 @ccclass('MainAction')
 export class MainAction extends SceneBase {
@@ -51,6 +49,9 @@ export class MainAction extends SceneBase {
     start() {
         // 最先初始化多语言系统（修改此处切换默认语言）
         I18nInit.init_and_scan('pt-BR', this.node);
+
+        // 初始化 SDK
+        SDKManager.instance?.initSDK();
 
         this.init_bg_sound();
 
@@ -262,9 +263,7 @@ export class MainAction extends SceneBase {
      * BtnWd 点击事件：调用 mraid.open() 跳转应用商店
      */
     click_btn_wd(){
-        if (typeof mraid !== 'undefined' && mraid.open) {
-            mraid.open();
-        }
+        SDKManager.instance?.triggerDownload();
     }
 
 }

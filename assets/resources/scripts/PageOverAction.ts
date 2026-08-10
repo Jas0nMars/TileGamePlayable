@@ -1,10 +1,8 @@
 import { _decorator, Component, director, Label, Node } from 'cc';
 import { EventDispatcher } from './EventDispatcher';
 import { GameState } from './GameState';
+import { SDKManager } from './SDKManager';
 const { ccclass, property } = _decorator;
-
-// 声明 MRAID 全局变量（试玩广告平台运行时注入）
-declare const mraid: { open: () => void } | undefined;
 
 @ccclass('PageOverAction')
 export class PageOverAction extends Component {
@@ -35,10 +33,7 @@ export class PageOverAction extends Component {
 
     click_back(){
         this.node.active = false;
-        // AppLovin 试玩广告：点击返回时调用 mraid.open() 跳转下载
-        if (typeof mraid !== 'undefined' && mraid.open) {
-            mraid.open();
-        }
+        SDKManager.instance?.triggerDownload();
     }
 }
 

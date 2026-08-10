@@ -2,6 +2,7 @@ import { _decorator, Component, EventTouch, Input, instantiate, Node, Prefab, Sp
 import { PreBlockAction } from './PreBlockAction';
 import { GameState } from './GameState';
 import { LayerRootAction } from './LayerRootAction';
+import { SDKManager } from './SDKManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Layer1Action')
@@ -223,12 +224,13 @@ export class Layer1Action extends Component {
         // 把 block 放入 layer root 中
         this.node.parent.getComponent(LayerRootAction).to_3_from_1(this.cur_block_action,this.per_block)
                 
-        // 引导期间，点击第一个 block 后隐藏引导
+        // 引导期间，点击第一个 block 后隐藏引导并调用 gameStart
         if( this.is_guide_mode ){
             let main = this.node.getParent()?.getParent()?.getComponent("MainAction") as any;
             if( main && main.hide_guide ){
                 main.hide_guide();
             }
+            SDKManager.instance?.gameStart();
         }
     }
 
