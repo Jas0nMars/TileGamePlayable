@@ -28,7 +28,7 @@ export class PreBlockAction extends Component {
 
     get_coustom_bounding_box():Rect{
         let rec_1 = this.get_bounding_box();
-        let num = 15;
+        let num = 23;
         let rect_1 = this.get_bounding_box();
         let rect_2 = new Rect(rec_1.x+num,rec_1.y+num,rec_1.width-num*2,rec_1.height-num*2)
         return rect_2;

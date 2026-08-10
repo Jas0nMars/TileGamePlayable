@@ -135,7 +135,7 @@ export class LayerRootAction extends Component {
             ele.node.setPosition(this.node.getComponent(UITransform).convertToNodeSpaceAR(ele.get_temp_pos()));
 
             tween(ele.node)
-            .to(0.1,{ position:local })
+            .to(0.1,{ position:local, scale: new Vec3(1,1,1) })
             .call(()=>{
                 this.layer_2_action.add_block(ele)
             }).start()
@@ -150,7 +150,7 @@ export class LayerRootAction extends Component {
         let slot_pos = this.layer_3_action.get_slot_position(clone_block);
         let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(slot_pos);
 
-        tween(clone_block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
+        tween(clone_block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.55,0.55,1) }).call(()=>{
             this.layer_3_action.add(clone_block);
             let [removed, positions] = this.layer_3_action.del_sane_block();
             if( removed.length>0 ){
@@ -175,7 +175,7 @@ export class LayerRootAction extends Component {
         let slot_pos = this.layer_3_action.get_slot_position(block);
         let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(slot_pos);
 
-        tween(block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.8,0.8,1) }).call(()=>{
+        tween(block.node).to(0.15,{ position:local_pos, scale: new Vec3(0.55,0.55,1) }).call(()=>{
             this.layer_3_action.add(block);
             
             let [removed, positions] = this.layer_3_action.del_sane_block();

@@ -23,13 +23,7 @@ export class SceneBase extends Component {
     }
 
     private on_off_sound(){
-        // if( GameState.sound_state ){
-        //     this.btn_sound.node.getChildByName("mm_on").active = true;
-        //     this.btn_sound.node.getChildByName("mm_off").active = false;
-        // }else{
-        //     this.btn_sound.node.getChildByName("mm_on").active = false;
-        //     this.btn_sound.node.getChildByName("mm_off").active = true;
-        // }
+        if( !this.audio_source ) return;
         if( GameState.sound_state ){
             this.audio_source.play()
             this.audio_source.loop = true;
@@ -45,6 +39,7 @@ export class SceneBase extends Component {
     }
 
     stop_bg_sound(){
+        if( !this.audio_source ) return;
         if( this.audio_source.playing ){
             this.audio_source.stop();
             this.audio_source.loop = false;

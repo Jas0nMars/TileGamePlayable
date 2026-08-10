@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, UITransform, Vec3, view } from 'cc';
+import { _decorator, Component, Node, UITransform, Vec3, view, Widget } from 'cc';
 import { MainAction } from './MainAction';
 const { ccclass, property } = _decorator;
 
@@ -58,6 +58,9 @@ export class ScreenLayoutManager extends Component {
     @property({ type: [LayoutItem] })
     layout_items: LayoutItem[] = [];
 
+    @property({ type: Node, tooltip: 'cash_info 节点，竖屏时使用 Widget 左右对齐' })
+    cash_info: Node = null;
+
     is_landscape: boolean = false;
     private _origin_design_w: number = 0;
     private _origin_design_h: number = 0;
@@ -69,6 +72,8 @@ export class ScreenLayoutManager extends Component {
         this._origin_design_h = design.height;
 
         this.check_orientation();
+        // 初始状态下也需要应用 cash_info 的 Widget 布局
+        this.apply_cash_info_layout();
         view.on('canvas-resize', this.on_canvas_resize, this);
     }
 
@@ -104,6 +109,9 @@ export class ScreenLayoutManager extends Component {
                 main.set_orientation(this.is_landscape);
             }
 
+            // cash_info 特殊处理：竖屏用 Widget 左右对齐，横屏关闭 Widget
+            this.apply_cash_info_layout();
+
             console.log(`[ScreenLayoutManager] 切换为${this.is_landscape ? '横屏' : '竖屏'}模式`);
         }
     }
@@ -127,6 +135,50 @@ export class ScreenLayoutManager extends Component {
                     ui.setContentSize(item.p_width, item.p_height);
                 }
             }
+        }
+    }
+
+    /**
+     * cash_info 特殊处理：
+     *   竖屏 → 启用 Widget，左右各预留 50px
+     *   横屏 → 禁用 Widget，使用 LayoutItem 配置的坐标
+     */
+    apply_cash_info_layout() {
+        if (!this.cash_info) return;
+        if (this.is_landscape) {
+            // 横屏：重置 Widget 对齐为 None，使用 LayoutItem 配置的坐标
+            let widget = this.cash_info.getComponent(Widget);
+            if (widget) {
+                widget.isAlignLeft = false;
+                widget.isAlignRight = false;
+                widget.isAlignTop = false;
+                widget.isAlignBottom = false;
+                widget.isAlignHorizontalCenter = false;
+                widget.isAlignVerticalCenter = false;
+                widget.enabled = false;
+            }
+        } else {
+            // 竖屏：启用 Widget，左右各预留 50px
+            let widget = this.cash_info.getComponent(Widget) || this.cash_info.addComponent(Widget);
+            widget.isAlignLeft = true;
+            widget.isAlignRight = true;
+            widget.left = 50;
+            widget.right = 50;
+            widget.enabled = true;
+            widget.updateAlignment();
+        }
+        // 刷新所有子节点的 Widget
+        this.refresh_children_widget(this.cash_info);
+    }
+
+    /** 递归刷新节点下所有子节点的 Widget */
+    refresh_children_widget(parent: Node) {
+        for (let child of parent.children) {
+            let child_widget = child.getComponent(Widget);
+            if (child_widget) {
+                child_widget.updateAlignment();
+            }
+            this.refresh_children_widget(child);
         }
     }
 }
