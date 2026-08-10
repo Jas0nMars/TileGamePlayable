@@ -9440,7 +9440,7 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 57.48000000000002,
+      "x": 57.480000000000075,
       "y": 3.5109999999999673,
       "z": 0
     },
@@ -9480,7 +9480,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 286.97,
-      "height": 50.4
+      "height": 67.40899999999999
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -9516,7 +9516,7 @@
     "_fontSize": 58,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
-    "_overflow": 0,
+    "_overflow": 1,
     "_enableWrapText": true,
     "_font": null,
     "_isSystemFontUsed": true,
