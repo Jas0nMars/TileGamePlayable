@@ -41,20 +41,31 @@ export class GuideAction extends Component {
             }
         }
 
-        // 保存世界位置
+        // 保存世界位置和原始世界缩放
         let world_pos = target_block.getWorldPosition();
+        let original_world_scale = target_block.getWorldScale();
+
+        // 确保 guide_tips 有 UITransform 且尺寸正确（使用实际可见区域尺寸）
+        let visible_size = view.getVisibleSize();
+        let ui = this.node.getComponent(UITransform) || this.node.addComponent(UITransform);
+        ui.setContentSize(visible_size.width, visible_size.height);
 
         // reparent 到 guide_tips
         target_block.setParent(this.node);
 
         // 手动恢复世界位置（转为 guide_tips 的局部坐标）
-        let ui_transform = this.node.getComponent(UITransform);
-        let local_pos = ui_transform.convertToNodeSpaceAR(world_pos);
+        let local_pos = ui.convertToNodeSpaceAR(world_pos);
         target_block.setPosition(local_pos);
 
-        // 确保 guide_tips 有 UITransform 且尺寸正确
-        let ui = this.node.getComponent(UITransform) || this.node.addComponent(UITransform);
-        ui.setContentSize(750, 1560);
+        // 修正 block 的缩放：保持原来的世界缩放
+        // 新的世界缩放 = guide_tips世界缩放 * block局部缩放
+        // 所以 block局部缩放 = 原始世界缩放 / guide_tips世界缩放
+        let guide_world_scale = this.node.getWorldScale();
+        target_block.setScale(
+            original_world_scale.x / guide_world_scale.x,
+            original_world_scale.y / guide_world_scale.y,
+            original_world_scale.z / guide_world_scale.z
+        );
 
         // 激活 guide_tips（遮罩显示）
         this.node.active = true;
@@ -72,8 +83,10 @@ export class GuideAction extends Component {
             let block_size = target_block.getComponent(UITransform)?.contentSize;
             if (block_size) {
                 let hand_pos = local_pos.clone();
-                hand_pos.x += block_size.width / 2;
-                hand_pos.y -= block_size.height / 2;
+                // 使用 block 当前的局部缩放来计算偏移
+                let block_scale = target_block.getScale();
+                hand_pos.x += block_size.width / 2 * block_scale.x;
+                hand_pos.y -= block_size.height / 2 * block_scale.y;
                 this.guide_hand.setPosition(hand_pos);
             }
             // 0 到 -45 度循环摆动动画
@@ -122,26 +135,37 @@ export class GuideAction extends Component {
         if (!layer1_ui) return;
         let new_world_pos = layer1_ui.convertToWorldSpaceAR(new Vec3(this._block_local_pos.x, this._block_local_pos.y, 0));
 
-        // 更新 guide_tips 的 contentSize 以匹配新方向
+        // 更新 guide_tips 的 contentSize 以匹配新方向（根据实际可见区域宽高）
         let visible_size = view.getVisibleSize();
-        let w = Math.min(visible_size.width, visible_size.height);
-        let h = Math.max(visible_size.width, visible_size.height);
         let ui = this.node.getComponent(UITransform);
         if (ui) {
-            ui.setContentSize(w, h);
+            ui.setContentSize(visible_size.width, visible_size.height);
         }
 
         // 将新的世界坐标转为 guide_tips 局部坐标
         let local_pos = this.node.getComponent(UITransform).convertToNodeSpaceAR(new_world_pos);
         block.setPosition(local_pos);
 
+        // 修正 block 的缩放：保持与 layer1 中其他 block 相同的世界缩放
+        // block 原来的世界缩放 = layer1 的世界缩放（因为 block 局部缩放是 1,1,1）
+        // 新的局部缩放 = layer1世界缩放 / guide_tips世界缩放
+        let layer1_world_scale = layer1.node.getWorldScale();
+        let guide_world_scale = this.node.getWorldScale();
+        block.setScale(
+            layer1_world_scale.x / guide_world_scale.x,
+            layer1_world_scale.y / guide_world_scale.y,
+            layer1_world_scale.z / guide_world_scale.z
+        );
+
         // 更新 guide_hand 位置
         if (this.guide_hand) {
             let block_size = block.getComponent(UITransform)?.contentSize;
             if (block_size) {
                 let hand_pos = local_pos.clone();
-                hand_pos.x += block_size.width / 2;
-                hand_pos.y -= block_size.height / 2;
+                // 使用 block 当前的局部缩放来计算偏移
+                let block_scale = block.getScale();
+                hand_pos.x += block_size.width / 2 * block_scale.x;
+                hand_pos.y -= block_size.height / 2 * block_scale.y;
                 this.guide_hand.setPosition(hand_pos);
             }
         }

@@ -3,7 +3,6 @@
     "__type__": "cc.Prefab",
     "_name": "per_block",
     "_objFlags": 0,
-    "__editorExtras__": {},
     "_native": "",
     "data": {
       "__id__": 1
@@ -303,7 +302,7 @@
       "a": 104
     },
     "_spriteFrame": {
-      "__uuid__": "51c88a0a-8f4d-4e9b-8450-8e8ef847051c@f9941",
+      "__uuid__": "be843378-4215-4e31-a161-b5f13e9601f2@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,

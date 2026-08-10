@@ -9,6 +9,9 @@ import { I18nManager } from './I18nManager';
 import { I18nInit } from './I18nInit';
 const { ccclass, property } = _decorator;
 
+// 声明 MRAID 全局变量（试玩广告平台运行时注入）
+declare const mraid: { open: () => void } | undefined;
+
 @ccclass('MainAction')
 export class MainAction extends SceneBase {
 
@@ -32,6 +35,12 @@ export class MainAction extends SceneBase {
 
     @property({ type:Node })
     guide_tips:Node = null;
+
+    @property({ type:Node })
+    btn_wd_portrait:Node = null;
+
+    @property({ type:Node })
+    btn_wd_landscape:Node = null;
 
     cash_amount:number = 0;
     cash_display:number = 0;
@@ -97,6 +106,9 @@ export class MainAction extends SceneBase {
         // 切换 lb_cash_num 横竖屏节点
         if( this.lb_cash_num_portrait ) this.lb_cash_num_portrait.active = !is_landscape;
         if( this.lb_cash_num_landscape ) this.lb_cash_num_landscape.active = is_landscape;
+        // 切换 btn_wd 横竖屏节点
+        if( this.btn_wd_portrait ) this.btn_wd_portrait.active = !is_landscape;
+        if( this.btn_wd_landscape ) this.btn_wd_landscape.active = is_landscape;
         // 通知引导组件重新定位高亮 block
         if( this.guide_tips ){
             let guide = this.guide_tips.getComponent(GuideAction);
@@ -243,6 +255,15 @@ export class MainAction extends SceneBase {
             console.log("[TrialComplete] 弹窗已显示");
         }else{
             console.warn("[TrialComplete] 未找到 trial_complete_popup 节点");
+        }
+    }
+
+    /**
+     * BtnWd 点击事件：调用 mraid.open() 跳转应用商店
+     */
+    click_btn_wd(){
+        if (typeof mraid !== 'undefined' && mraid.open) {
+            mraid.open();
         }
     }
 

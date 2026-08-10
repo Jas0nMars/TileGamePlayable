@@ -6,6 +6,9 @@
       "height": 1560,
       "fitHeight": true,
       "fitWidth": false
+    },
+    "splashScreen": {
+      "enabled": false
     }
   },
   "custom_joint_texture_layouts": []

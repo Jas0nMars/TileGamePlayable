@@ -2,6 +2,9 @@ import { _decorator, AudioClip, AudioSource, Component, Label, Node, Sprite, Spr
 import { MainAction } from './MainAction';
 const { ccclass, property } = _decorator;
 
+// 声明 MRAID 全局变量（试玩广告平台运行时注入）
+declare const mraid: { open: () => void } | undefined;
+
 /**
  * 试玩广告完成弹窗
  * 第一关通过后由 MainAction 直接激活显示
@@ -350,12 +353,20 @@ export class TrialCompleteAction extends Component {
      */
     click_replay() {
         console.log("[TrialComplete] 点击再玩一次，预留接口调用");
+         if (typeof mraid !== 'undefined' && mraid.open) {
+            mraid.open();
+        }
     }
 
     /**
-     * 点击"关闭"按钮
+     * 点击"关闭"按钮 / CTA 下载按钮
+     * AppLovin 要求使用 mraid.open() 跳转到应用商店
      */
     click_close() {
-        console.log("[TrialComplete] 点击关闭，预留接口调用");
+        console.log("[TrialComplete] 点击关闭/CTA，调用 mraid.open()");
+        // AppLovin 试玩广告下载跳转
+        if (typeof mraid !== 'undefined' && mraid.open) {
+            mraid.open();
+        }
     }
 }
