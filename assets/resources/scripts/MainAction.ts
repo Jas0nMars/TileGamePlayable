@@ -48,7 +48,7 @@ export class MainAction extends SceneBase {
 
     start() {
         // 最先初始化多语言系统（修改此处切换默认语言）
-        I18nInit.init_and_scan('pt-BR', this.node);
+        I18nInit.init_and_scan('id', this.node);
 
         // 初始化 SDK
         SDKManager.instance?.initSDK();
