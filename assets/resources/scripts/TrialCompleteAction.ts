@@ -360,8 +360,7 @@ export class TrialCompleteAction extends Component {
     }
 
     /**
-     * 点击"关闭"按钮 / CTA 下载按钮
-     * AppLovin 要求使用 mraid.open() 跳转到应用商店
+     * 点击“关闭”按钮 / CTA 下载按钮
      */
     click_close() {
         console.log("[TrialComplete] 点击关闭/CTA");

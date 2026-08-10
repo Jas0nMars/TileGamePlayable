@@ -260,7 +260,7 @@ export class MainAction extends SceneBase {
     }
 
     /**
-     * BtnWd 点击事件：调用 mraid.open() 跳转应用商店
+     * BtnWd 点击事件：触发下载
      */
     click_btn_wd(){
         SDKManager.instance?.triggerDownload();
