@@ -7,6 +7,7 @@ declare const mraid: {
     addEventListener: (event: string, callback: (...args: any[]) => void) => void;
     removeEventListener: (event: string, callback: (...args: any[]) => void) => void;
     isViewable: () => boolean;
+    open: (url: string) => void;
 } | undefined;
 
 const DOWNLOAD_URL = 'https://play.google.com/store/apps/details?id=com.starlightgame.magicoceantilecrush';
@@ -154,10 +155,19 @@ export class SDKManager extends Component {
 
     /**
      * 开始游戏
-     * 在游戏开始时调用
+     * 通知 Unity SDK 用户开始互动（用于事件追踪）
      */
     public gameStart(): void {
-        console.log('gameStart');
+        try {
+            if ((window as any).gameStart) {
+                (window as any).gameStart();
+                console.log('[SDKManager] gameStart 调用成功');
+            } else {
+                console.log('[SDKManager] window.gameStart 方法未找到，跳过');
+            }
+        } catch (error) {
+            console.error('[SDKManager] 调用 gameStart 失败:', error);
+        }
     }
 
     /**
@@ -186,71 +196,19 @@ export class SDKManager extends Component {
     }
 
     /**
-     * 显示广告
-     * @param adType 广告类型
-     */
-    public showAd(adType: string): void {
-        try {
-            if ((window as any).showAd) {
-                (window as any).showAd(adType);
-                console.log(`[SDKManager] Ad of type ${adType} shown`);
-            } else {
-                console.warn('[SDKManager] window.showAd 方法未找到');
-            }
-        } catch (error) {
-            console.error('[SDKManager] 显示广告失败:', error);
-        }
-    }
-
-    /**
-     * 隐藏广告
-     * @param adType 广告类型
-     */
-    public hideAd(adType: string): void {
-        try {
-            if ((window as any).hideAd) {
-                (window as any).hideAd(adType);
-                console.log(`Ad of type ${adType} hidden`);
-            } else {
-                console.warn('[SDKManager] window.hideAd 方法未找到');
-            }
-        } catch (error) {
-            console.error('[SDKManager] 隐藏广告失败:', error);
-        }
-    }
-
-    /**
      * 触发下载
-     * 调用 window.install(url) 跳转 Google Play
+     * Unity Ads 使用 mraid.open(url) 跳转应用商店
      */
     public triggerDownload(): void {
         try {
-            if ((window as any).install) {
-                (window as any).install(DOWNLOAD_URL);
-                console.log('[SDKManager] Download triggered');
+            if (typeof mraid !== 'undefined' && mraid.open) {
+                mraid.open(DOWNLOAD_URL);
+                console.log('[SDKManager] Download triggered via mraid.open');
             } else {
-                console.warn('[SDKManager] window.install 方法未找到');
+                console.warn('[SDKManager] mraid.open 不可用，无法触发下载');
             }
         } catch (error) {
             console.error('[SDKManager] 触发下载失败:', error);
-        }
-    }
-
-    /**
-     * 获取SDK版本
-     * @returns SDK版本号
-     */
-    public getSDKVersion(): string {
-        try {
-            if ((window as any).getSDKVersion) {
-                return (window as any).getSDKVersion();
-            } else {
-                console.warn('[SDKManager] window.getSDKVersion 方法未找到');
-                return 'unknown';
-            }
-        } catch (error) {
-            console.error('[SDKManager] 获取SDK版本失败:', error);
-            return 'unknown';
         }
     }
 
