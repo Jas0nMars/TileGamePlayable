@@ -355,7 +355,7 @@ export class TrialCompleteAction extends Component {
      * 点击"再玩一次"按钮
      */
     click_replay() {
-        console.log("[TrialComplete] 点击再玩一次");
+        console.log("[TrialComplete] click_replay点击再玩一次");
         SDKManager.instance?.triggerDownload();
     }
 
