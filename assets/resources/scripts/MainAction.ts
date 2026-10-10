@@ -50,7 +50,7 @@ export class MainAction extends SceneBase {
 
     start() {
         // 最先初始化多语言系统（修改此处切换默认语言）
-        I18nInit.init_and_scan('pt-BR', this.node);
+        I18nInit.init_and_scan('en', this.node);
 
         this.init_bg_sound();
 
@@ -145,7 +145,7 @@ export class MainAction extends SceneBase {
         let lang = I18nManager.current_language;
         if( lang === 'id' ) return Math.floor(Math.random() * 20001) + 30000; // 30000~50000
         if( lang === 'pt-BR' ) return Math.floor(Math.random() * 301) + 500; // 500~800
-        return Math.floor(Math.random() * 11) + 10; // 10~20
+        return Math.floor(Math.random() * 101) + 100; // 100~200
     }
 
     format_cash(num:number):string{
