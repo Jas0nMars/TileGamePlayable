@@ -1,4 +1,4 @@
-import { _decorator, AudioClip, AudioSource, Component, Label, Node, Sprite, SpriteFrame, tween, UIOpacity, UITransform, Vec3 } from 'cc';
+import { _decorator, AudioClip, AudioSource, Component, EventTouch, Input, Label, Node, Sprite, SpriteFrame, input, tween, UIOpacity, UITransform, Vec3 } from 'cc';
 import { MainAction } from './MainAction';
 import { SDKManager } from './SDKManager';
 const { ccclass, property } = _decorator;
@@ -47,8 +47,11 @@ export class TrialCompleteAction extends Component {
     private _breathing_tween_1: any = null;
     private _breathing_tween_2: any = null;
     private _audio_source: AudioSource = null;
+    private _fullscreen_download_enabled: boolean = false;
+    private _entrance_complete_callback: (() => void) | null = null;
 
     onEnable() {
+        this._disable_fullscreen_download();
         // 同步 MainAction 中的现金数值
         this.sync_cash();
         // 播放 reward 音效
@@ -58,8 +61,13 @@ export class TrialCompleteAction extends Component {
     }
 
     onDisable() {
+        this._disable_fullscreen_download();
         this.unschedule(this.play_cash_spray);
         this.stop_breathing();
+    }
+
+    onDestroy() {
+        this._disable_fullscreen_download();
     }
 
     /** 播放 reward 音效 */
@@ -152,16 +160,71 @@ export class TrialCompleteAction extends Component {
         // 7. cash_btn 弹出
         delay += this._pop_in(this.cash_btn, delay, 0.12);
 
-        // 8. 开始喷钱
-        this.scheduleOnce(() => {
+        // 8. 入场结束：开始喷钱，同时开启全屏点击。
+        this._entrance_complete_callback = () => {
+            if( !this.node.activeInHierarchy || !this.enabledInHierarchy ) return;
+            this._entrance_complete_callback = null;
             this.play_cash_spray();
             this.schedule(this.play_cash_spray, 0.25);
-        }, delay);
+            this._finish_entrance();
+        };
+        this.scheduleOnce(this._entrance_complete_callback, delay);
 
         // 9. 所有动画播放完毕后调用 gameEnd
         this.scheduleOnce(() => {
             this.gameEnd();
         }, delay + 2);
+    }
+
+    // ==================== 全屏点击下载 ====================
+
+    _finish_entrance() {
+        if( !this.node.activeInHierarchy || !this.enabledInHierarchy ) return;
+        if( !this._fullscreen_download_enabled ){
+            this._fullscreen_download_enabled = true;
+            // UI 触摸会被 Canvas / Button 吞掉，不能只依赖全局 input。
+            // 遮罩成为全屏触摸目标，根节点捕获其及其他弹窗子节点的触摸。
+            this.mask?.on(Node.EventType.TOUCH_START, this._on_mask_touch_start, this);
+            this.node.on(Node.EventType.TOUCH_END, this._on_fullscreen_touch_end, this, true);
+            input.on(Input.EventType.TOUCH_END, this._on_global_touch_end, this);
+            console.log("[TrialComplete] 入场结束，全屏点击下载已开启");
+        }
+    }
+
+    _on_mask_touch_start() {
+        // 注册触摸起点使全屏遮罩参与 UI 命中测试，结束事件由根节点捕获。
+    }
+
+    _on_fullscreen_touch_end(event?: EventTouch) {
+        if( !this._fullscreen_download_enabled || !this.node.activeInHierarchy || !this.enabledInHierarchy ) return;
+        for( let target = event?.target as Node | null; target; target = target.parent ){
+            // CTA 自己处理下载，保留按钮原有触摸效果。
+            if( target === this.cash_btn ) return;
+        }
+        this._trigger_download();
+    }
+
+    _on_global_touch_end(event?: EventTouch) {
+        for( let target = event?.target as Node | null; target; target = target.parent ){
+            // 弹窗内触摸已由 UI 捕获或按钮处理，不能再触发一次。
+            if( target === this.node ) return;
+        }
+        this._on_fullscreen_touch_end(event);
+    }
+
+    _trigger_download() {
+        SDKManager.instance?.triggerDownload();
+    }
+
+    _disable_fullscreen_download() {
+        if( this._entrance_complete_callback ){
+            this.unschedule(this._entrance_complete_callback);
+            this._entrance_complete_callback = null;
+        }
+        this.mask?.off(Node.EventType.TOUCH_START, this._on_mask_touch_start, this);
+        this.node.off(Node.EventType.TOUCH_END, this._on_fullscreen_touch_end, this, true);
+        input.off(Input.EventType.TOUCH_END, this._on_global_touch_end, this);
+        this._fullscreen_download_enabled = false;
     }
 
     /** 设置节点为隐藏状态（scale=0, opacity=0） */
